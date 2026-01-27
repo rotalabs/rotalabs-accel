@@ -4,24 +4,95 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rotalabs-accel"
-version = "0.0.1"
-description = "Speculative decoding and kernel implementations for inference acceleration"
+version = "0.1.0"
+description = "High-performance inference acceleration with Triton kernels, quantization, and speculative decoding"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.9"
 authors = [
-    { name = "Rotalabs", email = "research@rotalabs.ai" }
+    { name = "Subhadip Mitra", email = "subhadip@rotalabs.ai" },
+    { name = "Rotalabs Research", email = "research@rotalabs.ai" },
 ]
 classifiers = [
-    "Development Status :: 1 - Planning",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Environment :: GPU :: NVIDIA CUDA",
 ]
-keywords = ["ai", "acceleration", "inference", "triton", "speculative-decoding"]
+keywords = [
+    "inference",
+    "acceleration",
+    "triton",
+    "quantization",
+    "speculative-decoding",
+    "llm",
+    "transformers",
+    "gpu",
+    "cuda",
+]
+
+dependencies = [
+    "torch>=2.0.0",
+    "numpy>=1.24.0",
+]
+
+[project.optional-dependencies]
+triton = [
+    "triton>=2.1.0",
+]
+benchmark = [
+    "matplotlib>=3.7.0",
+    "pandas>=2.0.0",
+    "tqdm>=4.65.0",
+]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-benchmark>=4.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.5.0",
+]
+docs = [
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.4.0",
+    "mkdocstrings[python]>=0.24.0",
+]
+all = [
+    "rotalabs-accel[triton,benchmark]",
+]
 
 [project.urls]
 Homepage = "https://rotalabs.ai"
 Repository = "https://github.com/rotalabs/rotalabs-accel"
+Documentation = "https://rotalabs.github.io/rotalabs-accel/"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rotalabs_accel"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP"]
+ignore = ["E501", "B008"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["rotalabs_accel"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true

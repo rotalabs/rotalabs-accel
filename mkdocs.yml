@@ -1,0 +1,66 @@
+site_name: rotalabs-accel
+site_description: High-performance inference acceleration with Triton kernels
+site_url: https://rotalabs.github.io/rotalabs-accel/
+repo_url: https://github.com/rotalabs/rotalabs-accel
+repo_name: rotalabs/rotalabs-accel
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - search.suggest
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            heading_level: 2
+            members_order: source
+            show_signature_annotations: true
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - pymdownx.details
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - API Reference:
+      - Overview: api/index.md
+      - Kernels:
+          - Normalization: api/kernels/normalization.md
+          - Activations: api/kernels/activations.md
+          - RoPE: api/kernels/rope.md
+          - GEMM: api/kernels/gemm.md
+      - Quantization: api/quantization.md
+      - Modules: api/modules.md
+      - Utilities: api/utils.md
