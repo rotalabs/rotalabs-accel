@@ -1,10 +1,18 @@
 # rotalabs-accel
 
+[![PyPI version](https://img.shields.io/pypi/v/rotalabs-accel.svg)](https://pypi.org/project/rotalabs-accel/)
+[![Python versions](https://img.shields.io/pypi/pyversions/rotalabs-accel.svg)](https://pypi.org/project/rotalabs-accel/)
+[![License](https://img.shields.io/pypi/l/rotalabs-accel.svg)](https://github.com/rotalabs/rotalabs-accel/blob/main/LICENSE)
+[![Tests](https://github.com/rotalabs/rotalabs-accel/actions/workflows/tests.yml/badge.svg)](https://github.com/rotalabs/rotalabs-accel/actions/workflows/tests.yml)
+[![Documentation](https://img.shields.io/badge/docs-rotalabs.github.io-blue.svg)](https://rotalabs.github.io/rotalabs-accel/)
+
 High-performance inference acceleration with Triton kernels, quantization, and speculative decoding.
 
 ## Features
 
 - **Triton-Optimized Kernels**: RMSNorm, SwiGLU, RoPE, INT8 GEMM with automatic GPU/CPU fallback
+- **Speculative Decoding**: EAGLE, Medusa, and tree-based speculation for 2-4x inference speedup
+- **KV-Cache Compression**: Eviction policies (H2O, LRU, sliding window) and INT8/INT4 quantization
 - **Quantization**: INT8 symmetric quantization with per-channel and per-tensor support
 - **Drop-in Modules**: `nn.Module` replacements that match PyTorch API
 - **Device Abstraction**: Unified device detection and capability checking
@@ -195,13 +203,108 @@ All kernels automatically fall back to PyTorch implementations when:
 
 This ensures your code works everywhere without modification.
 
+## Speculative Decoding
+
+Accelerate LLM inference by 2-4x using draft-and-verify strategies:
+
+### Standard Speculative Decoding
+
+```python
+from rotalabs_accel.speculative import (
+    SpeculativeConfig,
+    speculative_decode,
+)
+
+config = SpeculativeConfig(
+    lookahead_k=4,           # Draft 4 tokens per iteration
+    max_new_tokens=256,
+    temperature=1.0,
+    adaptive_k=True,         # Dynamically adjust K based on acceptance
+)
+
+text, metrics = speculative_decode(
+    draft_model=small_model,
+    target_model=large_model,
+    tokenizer=tokenizer,
+    prompt="The future of AI is",
+    config=config,
+    device=device,
+)
+print(f"Acceptance rate: {metrics.acceptance_rate:.1%}")
+print(f"Speedup: {metrics.tokens_per_second:.1f} tok/s")
+```
+
+### EAGLE (Feature-aware Speculation)
+
+Uses target model hidden states for better draft predictions:
+
+```python
+from rotalabs_accel.speculative import (
+    create_eagle_model,
+    eagle_decode,
+    EAGLEConfig,
+)
+
+# Create EAGLE model (adds lightweight draft head to target)
+eagle_model = create_eagle_model("meta-llama/Llama-2-7b-hf")
+
+config = EAGLEConfig(lookahead_k=5, num_draft_layers=1)
+text, metrics = eagle_decode(eagle_model, tokenizer, prompt, config, device)
+```
+
+### Medusa (Multi-head Speculation)
+
+Parallel prediction of multiple future tokens:
+
+```python
+from rotalabs_accel.speculative import (
+    create_medusa_model,
+    medusa_decode,
+    MedusaConfig,
+)
+
+# Create Medusa model with 4 prediction heads
+medusa_model = create_medusa_model("meta-llama/Llama-2-7b-hf", num_heads=4)
+
+config = MedusaConfig(num_heads=4, num_candidates=10)
+text, metrics = medusa_decode(medusa_model, target_model, tokenizer, prompt, config, device)
+```
+
+### KV-Cache Compression
+
+Reduce memory for long contexts:
+
+```python
+from rotalabs_accel.speculative import (
+    CompressedKVCache,
+    KVCacheConfig,
+    EvictionPolicy,
+)
+
+config = KVCacheConfig(
+    max_cache_size=4096,            # Keep max 4K tokens
+    eviction_policy=EvictionPolicy.H2O,  # Heavy-hitter + recent
+    quantize=True,                   # INT8 quantization
+    quant_bits=8,
+)
+
+cache = CompressedKVCache(
+    config=config,
+    num_layers=32,
+    num_heads=32,
+    head_dim=128,
+)
+```
+
 ## Roadmap
 
+- [x] EAGLE-style speculative decoding
+- [x] Medusa multi-head speculation
+- [x] Tree-based speculation
+- [x] KV cache compression (H2O, LRU, sliding window)
 - [ ] FP8 quantization (Hopper/Blackwell)
 - [ ] Asymmetric INT4 quantization
-- [ ] EAGLE-style speculative decoding
 - [ ] Flash Attention integration
-- [ ] KV cache compression
 
 ## Links
 
