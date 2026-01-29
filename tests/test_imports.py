@@ -10,7 +10,7 @@ class TestPackageImports:
     def test_version(self):
         """Test version is accessible."""
         from rotalabs_accel import __version__
-        assert __version__ == "0.1.0"
+        assert __version__ == "0.2.0"
 
     def test_import_main_package(self):
         """Test main package imports."""
@@ -269,3 +269,259 @@ class TestDeviceUtils:
         assert "compute_capability" in props
         assert "supports_fp16" in props
         assert "supports_bf16" in props
+
+
+class TestSpeculativeImports:
+    """Test speculative decoding module imports."""
+
+    def test_import_config_classes(self):
+        """Test config class imports."""
+        from rotalabs_accel.speculative import (
+            DecodingMode,
+            SpeculativeConfig,
+            EAGLEConfig,
+            MedusaConfig,
+            TreeSpecConfig,
+            GenerationMetrics,
+        )
+        assert DecodingMode is not None
+        assert SpeculativeConfig is not None
+        assert EAGLEConfig is not None
+        assert MedusaConfig is not None
+        assert TreeSpecConfig is not None
+        assert GenerationMetrics is not None
+
+    def test_import_sampling(self):
+        """Test sampling utilities imports."""
+        from rotalabs_accel.speculative import (
+            sample_from_logits,
+            greedy_sample,
+            rejection_sample,
+        )
+        assert callable(sample_from_logits)
+        assert callable(greedy_sample)
+        assert callable(rejection_sample)
+
+    def test_import_eagle(self):
+        """Test EAGLE imports."""
+        from rotalabs_accel.speculative import (
+            EAGLEDraftHead,
+            EAGLEModel,
+            eagle_verify,
+            eagle_decode,
+            create_eagle_model,
+        )
+        assert EAGLEDraftHead is not None
+        assert EAGLEModel is not None
+        assert callable(eagle_verify)
+        assert callable(eagle_decode)
+        assert callable(create_eagle_model)
+
+    def test_import_medusa(self):
+        """Test Medusa imports."""
+        from rotalabs_accel.speculative import (
+            MedusaHead,
+            MedusaModel,
+            generate_candidates,
+            verify_candidates,
+            medusa_decode,
+            create_medusa_model,
+        )
+        assert MedusaHead is not None
+        assert MedusaModel is not None
+        assert callable(generate_candidates)
+        assert callable(verify_candidates)
+        assert callable(medusa_decode)
+        assert callable(create_medusa_model)
+
+    def test_import_tree(self):
+        """Test tree speculation imports."""
+        from rotalabs_accel.speculative import (
+            TreeNode,
+            SpeculationTree,
+            verify_tree,
+            tree_speculative_decode,
+        )
+        assert TreeNode is not None
+        assert SpeculationTree is not None
+        assert callable(verify_tree)
+        assert callable(tree_speculative_decode)
+
+    def test_import_kv_compression(self):
+        """Test KV compression imports."""
+        from rotalabs_accel.speculative import (
+            EvictionPolicy,
+            KVCacheConfig,
+            CacheStatistics,
+            QuantizedTensor,
+            CompressedKVCache,
+        )
+        assert EvictionPolicy is not None
+        assert KVCacheConfig is not None
+        assert CacheStatistics is not None
+        assert QuantizedTensor is not None
+        assert CompressedKVCache is not None
+
+    def test_import_core(self):
+        """Test core speculative decoding imports."""
+        from rotalabs_accel.speculative import (
+            trim_kv_cache,
+            prefill_cache,
+            draft_tokens,
+            verify_tokens,
+            speculative_decode,
+        )
+        assert callable(trim_kv_cache)
+        assert callable(prefill_cache)
+        assert callable(draft_tokens)
+        assert callable(verify_tokens)
+        assert callable(speculative_decode)
+
+
+class TestSpeculativeConfig:
+    """Test speculative config classes."""
+
+    def test_speculative_config_defaults(self):
+        """Test SpeculativeConfig default values."""
+        from rotalabs_accel.speculative import SpeculativeConfig, DecodingMode
+
+        config = SpeculativeConfig()
+        assert config.lookahead_k == 4
+        assert config.max_new_tokens == 256
+        assert config.temperature == 1.0
+        assert config.mode == DecodingMode.GREEDY
+
+    def test_eagle_config(self):
+        """Test EAGLEConfig."""
+        from rotalabs_accel.speculative import EAGLEConfig
+
+        config = EAGLEConfig(lookahead_k=6, num_draft_layers=2)
+        assert config.lookahead_k == 6
+        assert config.num_draft_layers == 2
+
+    def test_medusa_config(self):
+        """Test MedusaConfig."""
+        from rotalabs_accel.speculative import MedusaConfig
+
+        config = MedusaConfig(num_heads=5)
+        assert config.num_heads == 5
+
+    def test_tree_spec_config(self):
+        """Test TreeSpecConfig."""
+        from rotalabs_accel.speculative import TreeSpecConfig
+
+        config = TreeSpecConfig(max_depth=6, branch_factor=3)
+        assert config.max_depth == 6
+        assert config.branch_factor == 3
+
+    def test_generation_metrics(self):
+        """Test GenerationMetrics properties."""
+        from rotalabs_accel.speculative import GenerationMetrics
+
+        metrics = GenerationMetrics(
+            total_tokens=100,
+            accepted_tokens=80,
+            total_time_ms=1000.0,
+            iterations=10,
+        )
+        assert metrics.acceptance_rate == 0.8
+        assert metrics.tokens_per_second == 80.0
+
+
+class TestKVCompression:
+    """Test KV cache compression functionality."""
+
+    def test_quantized_tensor(self):
+        """Test QuantizedTensor quantization."""
+        from rotalabs_accel.speculative import QuantizedTensor
+
+        x = torch.randn(2, 4, 8, 16)
+        qt = QuantizedTensor(x, bits=8, per_channel=True)
+
+        assert qt.bits == 8
+        assert qt.shape == x.shape
+        assert qt.data.dtype == torch.int8
+
+        # Dequantize
+        x_recon = qt.dequantize()
+        assert x_recon.shape == x.shape
+        error = (x - x_recon).abs().mean()
+        assert error < 0.1
+
+    def test_compressed_kv_cache(self):
+        """Test CompressedKVCache basic operations."""
+        from rotalabs_accel.speculative import (
+            CompressedKVCache,
+            KVCacheConfig,
+            EvictionPolicy,
+        )
+
+        config = KVCacheConfig(
+            max_cache_size=64,
+            eviction_policy=EvictionPolicy.H2O,
+            quantize=False,
+        )
+
+        cache = CompressedKVCache(
+            config=config,
+            num_layers=2,
+            num_heads=4,
+            head_dim=16,
+            device=torch.device("cpu"),
+        )
+
+        # Add some key-value pairs
+        key = torch.randn(1, 4, 10, 16)
+        value = torch.randn(1, 4, 10, 16)
+
+        full_key, full_value = cache.update(0, key, value)
+
+        assert full_key.shape == key.shape
+        assert cache.get_cache_length(0) == 10
+
+    def test_eviction_policies(self):
+        """Test different eviction policies."""
+        from rotalabs_accel.speculative import EvictionPolicy
+
+        assert EvictionPolicy.H2O.value == "h2o"
+        assert EvictionPolicy.LRU.value == "lru"
+        assert EvictionPolicy.SLIDING.value == "sliding"
+        assert EvictionPolicy.ATTENTION.value == "attention"
+
+
+class TestSampling:
+    """Test sampling utilities."""
+
+    def test_sample_from_logits_greedy(self):
+        """Test greedy sampling."""
+        from rotalabs_accel.speculative import sample_from_logits
+
+        logits = torch.randn(1, 100)
+        logits[0, 42] = 100.0  # Make one token highly likely
+
+        token, prob = sample_from_logits(logits, use_sampling=False)
+        assert token.item() == 42
+
+    def test_sample_from_logits_temperature(self):
+        """Test temperature scaling."""
+        from rotalabs_accel.speculative import sample_from_logits
+
+        logits = torch.randn(1, 100)
+        token1, _ = sample_from_logits(logits, temperature=0.1, use_sampling=True)
+        token2, _ = sample_from_logits(logits, temperature=10.0, use_sampling=True)
+
+        # Both should return valid tokens
+        assert 0 <= token1.item() < 100
+        assert 0 <= token2.item() < 100
+
+    def test_greedy_sample(self):
+        """Test greedy_sample function."""
+        from rotalabs_accel.speculative import greedy_sample
+
+        logits = torch.randn(2, 100)
+        logits[0, 10] = 100.0
+        logits[1, 20] = 100.0
+
+        tokens, probs = greedy_sample(logits)
+        assert tokens[0].item() == 10
+        assert tokens[1].item() == 20

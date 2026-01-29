@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rotalabs-accel"
-version = "0.1.0"
+version = "0.2.0"
 description = "High-performance inference acceleration with Triton kernels, quantization, and speculative decoding"
 readme = "README.md"
 license = "MIT"
@@ -41,6 +41,7 @@ keywords = [
 dependencies = [
     "torch>=2.0.0",
     "numpy>=1.24.0",
+    "transformers>=4.35.0",
 ]
 
 [project.optional-dependencies]

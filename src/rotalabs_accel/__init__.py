@@ -3,6 +3,8 @@
 Provides:
 - Triton-optimized kernels (RMSNorm, SwiGLU, RoPE, INT8 GEMM)
 - Quantization utilities (symmetric INT8, per-channel)
+- Speculative decoding (EAGLE, Medusa, tree speculation)
+- KV-cache compression with eviction policies
 - Drop-in nn.Module replacements
 - Device abstraction and capability detection
 
@@ -17,6 +19,13 @@ Example:
     >>> # Check device capabilities
     >>> if is_triton_available():
     ...     print("Triton kernels available!")
+    >>>
+    >>> # Speculative decoding
+    >>> from rotalabs_accel.speculative import (
+    ...     SpeculativeConfig, speculative_decode,
+    ...     create_eagle_model, eagle_decode,
+    ...     create_medusa_model, medusa_decode,
+    ... )
 """
 
 from rotalabs_accel._version import __version__
