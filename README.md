@@ -69,6 +69,8 @@ x = swiglu(x)
 
 ## Kernels
 
+Design notes, benchmark scripts, and a roofline analysis for each kernel live in the educational companion repository [triton-kernels](https://github.com/bassrehab/triton-kernels) (MIT), which also publishes a fused MoE dispatch and a 4-bit W4A16 GEMM on the [Hugging Face Kernel Hub](https://huggingface.co/kernels/bassrehab/moe-dispatch). See [Portable Triton Kernels, With the Roofline to Prove It](https://rotalabs.ai/blog/triton-kernels-roofline/) for the writeup.
+
 ### RMSNorm
 
 Root Mean Square Layer Normalization with optional residual fusion:
@@ -311,6 +313,7 @@ cache = CompressedKVCache(
 - Documentation: https://rotalabs.github.io/rotalabs-accel/
 - PyPI: https://pypi.org/project/rotalabs-accel/
 - GitHub: https://github.com/rotalabs/rotalabs-accel
+- Kernel design notes & roofline analysis: https://github.com/bassrehab/triton-kernels
 - Website: https://rotalabs.ai
 - Contact: research@rotalabs.ai
 
